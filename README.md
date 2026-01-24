@@ -198,5 +198,4 @@ Contributions are welcome! When adding new gates:
 5. Register the gate in `src/runner.ts`
 
 ## License
-
-ISC
+RBR
