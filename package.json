@@ -1,22 +1,25 @@
 {
   "name": "quality-gates-platform",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "gate": "ts-node src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "ts-node": "^10.9.2"
+
+  "scripts": {
+    "gate": "node --loader ts-node/esm src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+
+  "dependencies": {},
+
   "devDependencies": {
     "@types/node": "^25.0.10",
     "@typescript-eslint/parser": "^8.53.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
 }

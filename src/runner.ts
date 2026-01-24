@@ -1,9 +1,14 @@
 import fs from "fs";
 import path from "path";
-import { checkNoAny } from "./gates/no-any-gate";
-import { checkNoEval } from "./gates/no-eval-gate";
+import { checkNoAny } from "./gates/no-any-gate.js";
+import { checkNoEval } from "./gates/no-eval-gate.js";
+
+console.log("\n🔥 RUNNER LOADED 🔥");
 
 export function runGates(targetDir: string) {
+    console.log('------------------------------------------------------------------------');
+    console.log("Running quality gates on:", targetDir);
+    console.log('------------------------------------------------------------------------');
     const results: string[] = [];
 
     function readFiles(dir: string) {
@@ -17,9 +22,10 @@ export function runGates(targetDir: string) {
                 readFiles(fullPath);
             } else if (entry.endsWith(".ts")) {
                 const source = fs.readFileSync(fullPath, "utf-8");
-                console.log(`Checking file: ${fullPath}`);
-                results.push(...checkNoAny(source));
-                results.push(...checkNoEval(source));
+                console.log(`\t- Checking file: ${fullPath}`);
+                results.push(...checkNoAny(source, fullPath));
+                results.push(...checkNoEval(source, fullPath));
+                console.log('');
             }
         }
     }
@@ -27,10 +33,13 @@ export function runGates(targetDir: string) {
     readFiles(targetDir);
     
     if (results.length > 0) {
-        console.log("QUALITY GATE FAILED!!!");
-        results.forEach(error => console.error(" - ", error));
+        console.log('------------------------------------------------------------------------');
+        console.log("❌ QUALITY GATE FAILED!!!");
+        results.forEach(error => console.error('\t-', error));
+        console.log('------------------------------------------------------------------------');
         process.exit(1);
     }
 
     console.log("Quality gate passed!");
+    console.log('------------------------------------------------------------------------');
 }
