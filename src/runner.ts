@@ -25,7 +25,6 @@ export function runGates(targetDir: string) {
                 console.log(`\t- Checking file: ${fullPath}`);
                 results.push(...checkNoAny(source, fullPath));
                 results.push(...checkNoEval(source, fullPath));
-                console.log('');
             }
         }
     }
@@ -34,7 +33,7 @@ export function runGates(targetDir: string) {
     
     if (results.length > 0) {
         console.log('------------------------------------------------------------------------');
-        console.log("❌ QUALITY GATE FAILED!!!");
+        console.log(`❌ QUALITY GATE FAILED!!! Found ${results.length} violations`);
         results.forEach(error => console.error('\t-', error));
         console.log('------------------------------------------------------------------------');
         process.exit(1);
