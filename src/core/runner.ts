@@ -15,8 +15,9 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
     console.log('------------------------------------------------------------------------');
     const results: Violation[] = [];
 
-    function readFiles(dir: string) {
+    async function readFiles(dir: string) {
         const entries = fs.readdirSync(dir);
+        const tasks: Promise<void>[] = [];
 
         for (const entry of entries) {
             const fullPath = path.join(dir, entry);
@@ -25,23 +26,26 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
             if (stat.isDirectory()) {
                 readFiles(fullPath);
             } else if (entry.endsWith(".ts")) {
-                const source = fs.readFileSync(fullPath, "utf-8");
-                console.log(`\t- Checking file: ${fullPath}`);
-                for (const gate of gatesConfig.gates) {
-                    if (gate.enabled) {
-                        const gateFunction = gateRegistry[gate.name];
-                        if (!gateFunction) {
-                            console.error(`\t- Gate function for ${gate.name} not found`);
-                            continue;
+                // Process files in parallel
+                tasks.push((async () => {
+                    const source = fs.readFileSync(fullPath, "utf-8");
+                    console.log(`\t- Checking file: ${fullPath}`);
+                    for (const gate of gatesConfig.gates) {
+                        if (gate.enabled) {
+                            const gateFunction = gateRegistry[gate.name];
+                            if (!gateFunction) {
+                                console.error(`\t- Gate function for ${gate.name} not found`);
+                                continue;
+                            }
+                            const violations = gateFunction(source, fullPath);
+                            results.push(...violations);
                         }
-                        const violations = gateFunction(source, fullPath);
-                        results.push(...violations);
                     }
-                }
+                })());
             }
         }
+        await Promise.all(tasks); // Wait for all tasks to complete
     }
-
     readFiles(targetDir);
     
     if (results.length > 0) {
