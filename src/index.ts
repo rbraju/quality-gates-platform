@@ -1,4 +1,4 @@
-import { runGates } from "./runner.js";
+import { runGates } from "./core/runner.js";
 
 const target = process.argv[2];
 

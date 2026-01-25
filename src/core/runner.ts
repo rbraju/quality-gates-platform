@@ -1,11 +1,15 @@
 import fs from "fs";
 import path from "path";
-import { checkNoAny } from "./gates/no-any-gate.js";
-import { checkNoEval } from "./gates/no-eval-gate.js";
+import { gateFunctions, QualityGatesConfig } from "./types.js";
+import { gateRegistry } from "./gate-registry.js";
 
 console.log("\n🔥 RUNNER LOADED 🔥");
 
-export function runGates(targetDir: string) {
+export function runGates(targetDir: string, configPath: string = "./gates-config.json") {
+
+    const rawConfig = fs.readFileSync(configPath, 'utf-8');
+    const gatesConfig: QualityGatesConfig = JSON.parse(rawConfig);
+
     console.log('------------------------------------------------------------------------');
     console.log("Running quality gates on:", targetDir);
     console.log('------------------------------------------------------------------------');
@@ -23,8 +27,17 @@ export function runGates(targetDir: string) {
             } else if (entry.endsWith(".ts")) {
                 const source = fs.readFileSync(fullPath, "utf-8");
                 console.log(`\t- Checking file: ${fullPath}`);
-                results.push(...checkNoAny(source, fullPath));
-                results.push(...checkNoEval(source, fullPath));
+                for (const gate of gatesConfig.gates) {
+                    if (gate.enabled) {
+                        const gateFunction = gateRegistry[gate.name];
+                        if (!gateFunction) {
+                            console.error(`\t- Gate function for ${gate.name} not found`);
+                            continue;
+                        }
+                        const violations = gateFunction(source, fullPath);
+                        results.push(...violations);
+                    }
+                }
             }
         }
     }
