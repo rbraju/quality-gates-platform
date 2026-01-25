@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { gateFunctions, QualityGatesConfig } from "./types.js";
+import { QualityGatesConfig, Violation } from "./types.js";
 import { gateRegistry } from "./gate-registry.js";
 
 console.log("\n🔥 RUNNER LOADED 🔥");
@@ -13,7 +13,7 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
     console.log('------------------------------------------------------------------------');
     console.log("Running quality gates on:", targetDir);
     console.log('------------------------------------------------------------------------');
-    const results: string[] = [];
+    const results: Violation[] = [];
 
     function readFiles(dir: string) {
         const entries = fs.readdirSync(dir);
@@ -47,7 +47,7 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
     if (results.length > 0) {
         console.log('------------------------------------------------------------------------');
         console.log(`❌ QUALITY GATE FAILED!!! Found ${results.length} violations`);
-        results.forEach(error => console.error('\t-', error));
+        results.forEach(error => console.error(`\t- ${error.file}:${error.line}:${error.column} ${error.message}`));
         console.log('------------------------------------------------------------------------');
         process.exit(1);
     }

@@ -11,7 +11,8 @@ export interface QualityGatesConfig {
     gates: GateConfig[];
 }
 
-export type GateFunction = (source: string, filePath: string) => string[];
+// Type for gate functions
+export type GateFunction = (source: string, filePath: string) => Violation[];
 
 /**
  * Map of quality gate names to functions
@@ -19,8 +20,16 @@ export type GateFunction = (source: string, filePath: string) => string[];
  * Key: Name of the gate
  * Value: Function to run the gate
  */
-export const gateFunctions: Record<string, (source: string, filePath: string) => string[]> = {
+export const gateFunctions: Record<string, GateFunction> = {
     "no-any": checkNoAny,
     "no-eval": checkNoEval
 }
  
+// Types for violation
+export interface Violation {
+    gate: string,
+    file: string,
+    line: number,
+    column: number,
+    message: string
+}
