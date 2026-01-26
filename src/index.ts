@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { availableReporters, Reporter } from "./reporters/Reporter.js";
 import { runGates } from "./core/runner.js";
 import { Violation } from "./types/Violation.js";
