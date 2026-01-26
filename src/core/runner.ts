@@ -2,10 +2,12 @@ import fs from "fs";
 import path from "path";
 import { QualityGatesConfig, Violation } from "./types.js";
 import { gateRegistry } from "./gate-registry.js";
+import { Reporter } from "../reporters/reporter.js";
+import { ConsoleReporter } from "../reporters/console-reporter.js";
 
 console.log("\n🔥 RUNNER LOADED 🔥");
 
-export function runGates(targetDir: string, configPath: string = "./gates-config.json") {
+export async function runGates(targetDir: string, configPath: string = "./gates-config.json"): Promise<Violation[]> {
 
     const rawConfig = fs.readFileSync(configPath, 'utf-8');
     const gatesConfig: QualityGatesConfig = JSON.parse(rawConfig);
@@ -13,7 +15,7 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
     console.log('------------------------------------------------------------------------');
     console.log("Running quality gates on:", targetDir);
     console.log('------------------------------------------------------------------------');
-    const results: Violation[] = [];
+    const violations: Violation[] = [];
 
     async function readFiles(dir: string) {
         const entries = fs.readdirSync(dir);
@@ -37,8 +39,8 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
                                 console.error(`\t- Gate function for ${gate.name} not found`);
                                 continue;
                             }
-                            const violations = gateFunction(source, fullPath);
-                            results.push(...violations);
+                            const fileViolations = gateFunction(source, fullPath);
+                            violations.push(...fileViolations);
                         }
                     }
                 })());
@@ -46,16 +48,6 @@ export function runGates(targetDir: string, configPath: string = "./gates-config
         }
         await Promise.all(tasks); // Wait for all tasks to complete
     }
-    readFiles(targetDir);
-    
-    if (results.length > 0) {
-        console.log('------------------------------------------------------------------------');
-        console.log(`❌ QUALITY GATE FAILED!!! Found ${results.length} violations`);
-        results.forEach(error => console.error(`\t- ${error.file}:${error.line}:${error.column} ${error.message}`));
-        console.log('------------------------------------------------------------------------');
-        process.exit(1);
-    }
-
-    console.log("Quality gate passed!");
-    console.log('------------------------------------------------------------------------');
+    await readFiles(targetDir);
+    return violations;
 }
