@@ -1,74 +1,140 @@
 # Quality Gates Platform
 
-A TypeScript-based quality assurance tool that enforces coding standards by running configurable quality gates on your codebase. This platform provides a foundation for maintaining code quality through automated static analysis.
+A TypeScript-based static code analysis tool that enforces coding standards through configurable rules. The platform scans TypeScript codebases, detects violations, and generates reports in multiple formats.
 
 ## Overview
 
-The Quality Gates Platform scans TypeScript codebases and checks for violations of predefined quality rules. Each "gate" is a specialized check that analyzes code using the TypeScript Compiler API to detect patterns, anti-patterns, or violations of coding standards.
+The Quality Gates Platform analyzes TypeScript source files using the TypeScript Compiler API to detect violations of predefined quality rules. It provides a flexible, rule-based architecture that can be easily extended with custom rules and reporters.
 
-### Current Gates
+## Features
 
-- **No-Any Gate**: Detects usage of the `any` type, which can undermine TypeScript's type safety
-- **No-Eval Gate**: Detects usage of `eval()`, which poses security risks and should be avoided
+- **Rule-based Analysis**: Configurable rules that analyze code using TypeScript's AST
+- **Multiple Reporters**: Support for console and JSON output formats
+- **Configurable**: Easy configuration via `.analyzerrc` file
+- **Extensible**: Simple interfaces for adding custom rules and reporters
+- **CI/CD Ready**: Exits with appropriate codes for integration into pipelines
 
-## Architecture & Design
+## Architecture
 
 ### Project Structure
 
 ```
 quality-gates-platform/
 ├── src/
-│   ├── gates/           # Individual quality gate implementations
-│   │   ├── no-any-gate.ts
-│   │   └── no-eval-gate.ts
-│   ├── runner.ts        # Core orchestration logic
-│   └── index.ts         # CLI entry point
+│   ├── core/              # Core analysis engine
+│   │   ├── Analyzer.ts    # Orchestrates rule execution
+│   │   ├── FileWalker.ts  # Recursively finds TypeScript files
+│   │   └── runner.ts      # Main execution flow
+│   ├── rules/             # Quality rules
+│   │   ├── Rule.ts        # Rule interface and registry
+│   │   ├── NoAnyRule.ts   # Detects 'any' type usage
+│   │   └── NoEvalRule.ts  # Detects eval() usage
+│   ├── reporters/         # Output formatters
+│   │   ├── Reporter.ts    # Reporter interface and registry
+│   │   ├── ConsoleReporter.ts  # Console output
+│   │   └── JsonReporter.ts     # JSON file output
+│   ├── types/             # Type definitions
+│   │   └── Violation.ts   # Violation data structure
+│   └── index.ts           # CLI entry point
+├── .analyzerrc            # Configuration file
 ├── package.json
 └── tsconfig.json
 ```
 
-### Design Principles
+### Core Components
 
-1. **Modular Gate System**: Each gate is a self-contained module that exports a check function
-   - Gates receive source code and file path as inputs
-   - Gates return an array of violation messages (empty if no violations)
-   - Violation messages follow the format: `filePath:line:column: message`
+#### 1. **Runner** (`src/core/runner.ts`)
+- Orchestrates the analysis workflow
+- Coordinates FileWalker and Analyzer
+- Aggregates violations from all files
 
-2. **TypeScript Compiler API**: Gates leverage TypeScript's built-in parser and AST traversal
-   - Uses `ts.createSourceFile()` to parse code
-   - Recursively visits AST nodes using `ts.forEachChild()`
-   - Provides precise line and column information for violations
+#### 2. **FileWalker** (`src/core/FileWalker.ts`)
+- Recursively traverses directory trees
+- Filters for TypeScript files (`.ts` extension)
+- Returns list of files to analyze
 
-3. **Extensible Architecture**: New gates can be easily added by:
-   - Creating a new file in `src/gates/`
-   - Implementing a check function that follows the gate interface
-   - Registering it in `runner.ts`
+#### 3. **Analyzer** (`src/core/Analyzer.ts`)
+- Executes configured rules on source files
+- Uses TypeScript Compiler API for AST parsing
+- Returns structured violation data
 
-### How It Works
+#### 4. **Rules** (`src/rules/`)
+- Each rule implements the `Rule` interface
+- Rules analyze source code and return violations
+- Currently available:
+  - **NoAnyRule**: Detects usage of the `any` type
+  - **NoEvalRule**: Detects usage of `eval()` function
 
-1. **Entry Point** (`index.ts`): Accepts a target directory path via command-line argument
-2. **Runner** (`runner.ts`): 
-   - Recursively traverses the target directory
-   - Filters for `.ts` files
-   - Runs all registered gates on each file
-   - Aggregates violations from all gates
-   - Exits with code 1 if violations are found, 0 if all gates pass
-3. **Gates**: Each gate analyzes the AST and reports violations with precise location information
+#### 5. **Reporters** (`src/reporters/`)
+- Format and output violation data
+- Currently available:
+  - **ConsoleReporter**: Prints violations to console
+  - **JsonReporter**: Writes violations to JSON file
 
-## Usage
+### Data Flow
+
+1. **Entry Point** (`src/index.ts`):
+   - Reads command-line arguments (target directory)
+   - Loads configuration from `.analyzerrc`
+   - Initializes rules and reporters based on config
+   - Executes analysis and generates reports
+
+2. **Analysis Flow**:
+   ```
+   Target Directory → FileWalker → List of Files
+   ↓
+   For each file:
+   Source Code → Analyzer → Rules → Violations
+   ↓
+   All Violations → Reporters → Output
+   ```
+
+3. **Violation Structure**:
+   ```typescript
+   {
+     ruleName: string;
+     message: string;
+     filePath: string;
+     line: number;
+     column?: number;
+     severity: 'error' | 'warning';
+   }
+   ```
+
+## Installation
 
 ### Prerequisites
 
 - Node.js (v14 or higher)
 - npm or yarn
 
-### Installation
+### Setup
 
 ```bash
 npm install
 ```
 
-### Running Quality Gates
+## Configuration
+
+The platform is configured via `.analyzerrc` file in the project root:
+
+```json
+{
+  "rules": ["noAny", "noEval"],
+  "reporters": ["console", "json"],
+  "outputFile": "violations.json"
+}
+```
+
+### Configuration Options
+
+- **rules**: Array of rule names to enable (available: `noAny`, `noEval`)
+- **reporters**: Array of reporter names to use (available: `console`, `json`)
+- **outputFile**: Output file path for JSON reporter (optional, defaults to `violations.json`)
+
+## Usage
+
+### Basic Usage
 
 Run quality gates on a target directory:
 
@@ -81,21 +147,33 @@ npm run gate <path-to-directory>
 npm run gate ./src
 ```
 
-### Output
+### How It Works
 
-When gates pass:
+1. The tool reads `.analyzerrc` to determine which rules and reporters to use
+2. It recursively scans the target directory for TypeScript files
+3. Each file is analyzed against all enabled rules
+4. Violations are collected and passed to configured reporters
+5. The process exits with code 1 if violations are found, 0 otherwise
+
+## Sample Output
+
+### When All Gates Pass
+
 ```
 🔥 RUNNER LOADED 🔥
 ------------------------------------------------------------------------
 Running quality gates on: ./src
 ------------------------------------------------------------------------
 	- Checking file: ./src/index.ts
-	- Checking file: ./src/runner.ts
+	- Checking file: ./src/core/runner.ts
+	- Checking file: ./src/rules/NoAnyRule.ts
 Quality gate passed!
 ------------------------------------------------------------------------
 ```
 
-When violations are found:
+### When Violations Are Found
+
+**Console Output:**
 ```
 🔥 RUNNER LOADED 🔥
 ------------------------------------------------------------------------
@@ -104,98 +182,132 @@ Running quality gates on: ./src
 	- Checking file: ./src/example.ts
 ------------------------------------------------------------------------
 ❌ QUALITY GATE FAILED!!! Found 2 violations
-	- ./src/example.ts:5:10: Usage of 'any' type is forbidden
-	- ./src/example.ts:10:15: Usage of eval() is forbidden
+
+📄 Violations:
+	- ./src/example.ts:5:10 Usage of "any" is forbidden
+	- ./src/example.ts:10:15 Usage of eval() is forbidden
 ------------------------------------------------------------------------
 ```
 
-The process exits with code 1 when violations are detected, making it suitable for CI/CD pipelines.
+**JSON Output** (written to `violations.json`):
+```json
+[
+  {
+    "ruleName": "noAny",
+    "message": "Usage of \"any\" is forbidden",
+    "filePath": "./src/example.ts",
+    "line": 5,
+    "column": 10,
+    "severity": "error"
+  },
+  {
+    "ruleName": "noEval",
+    "message": "Usage of eval() is forbidden",
+    "filePath": "./src/example.ts",
+    "line": 10,
+    "column": 15,
+    "severity": "error"
+  }
+]
 
-## Next Steps: Library Distribution
+📄 JSON report generated to violations.json
+```
 
-To make this repository available as a library for consumers (e.g., plugin repositories), the following steps are planned:
+## Extending the Platform
 
-### 1. Build Configuration
-- [ ] Configure TypeScript compilation to output to `dist/` directory
-- [ ] Set up build scripts in `package.json`
-- [ ] Ensure proper module exports (ESM/CommonJS compatibility)
-- [ ] Generate type definitions (`.d.ts` files)
+### Adding a New Rule
 
-### 2. Package Configuration
-- [ ] Update `package.json` with:
-  - Proper `main`, `module`, and `types` fields pointing to built files
-  - Repository URL and package metadata
-  - Keywords for discoverability
-  - License information
-- [ ] Add `.npmignore` or configure `files` field to include only necessary files
+1. Create a new rule class in `src/rules/`:
 
-### 3. Public API Design
-- [ ] Export a clean, stable API from `src/index.ts`:
-  ```typescript
-  export { runGates } from './runner';
-  export { checkNoAny } from './gates/no-any-gate';
-  export { checkNoEval } from './gates/no-eval-gate';
-  ```
-- [ ] Create a programmatic API for library consumers:
-  ```typescript
-  import { QualityGateRunner } from 'quality-gates-platform';
-  
-  const runner = new QualityGateRunner();
-  runner.addGate(customGate);
-  runner.run('./src');
-  ```
+```typescript
+import * as ts from "typescript";
+import { Rule } from "./Rule.js";
+import { Violation } from "../types/Violation.js";
 
-### 4. Configuration System
-- [ ] Add support for configuration files (e.g., `quality-gates.config.json`)
-- [ ] Allow consumers to:
-  - Enable/disable specific gates
-  - Configure gate-specific options
-  - Define custom file patterns (not just `.ts`)
-  - Set custom violation reporting formats
+export class MyCustomRule implements Rule {
+    name = 'myCustomRule';
+    severity = 'error' as const;
 
-### 5. Gate Plugin System
-- [ ] Design a plugin interface for custom gates
-- [ ] Allow consumers to register their own gates
-- [ ] Provide utilities for common gate patterns
+    analyze(source: string, filePath: string): Violation[] {
+        const sourceFile = ts.createSourceFile(
+            filePath, 
+            source, 
+            ts.ScriptTarget.ESNext, 
+            false
+        );
+        const violations: Violation[] = [];
 
-### 6. Documentation
-- [ ] Create API documentation (JSDoc comments)
-- [ ] Add usage examples for library consumers
-- [ ] Document how to create custom gates
-- [ ] Add migration guide for breaking changes
+        function visit(node: ts.Node) {
+            // Your analysis logic here
+            ts.forEachChild(node, visit);
+        }
 
-### 7. Testing & Quality
-- [ ] Add unit tests for gates
-- [ ] Add integration tests for the runner
-- [ ] Set up CI/CD pipeline
-- [ ] Add code coverage reporting
+        visit(sourceFile);
+        return violations;
+    }
+}
+```
 
-### 8. Publishing
-- [ ] Set up npm publishing workflow
-- [ ] Configure semantic versioning
-- [ ] Create changelog
-- [ ] Set up automated releases
+2. Register it in `src/rules/Rule.ts`:
 
-### 9. Developer Experience
-- [ ] Add CLI improvements (better error messages, progress indicators)
-- [ ] Support for watch mode
-- [ ] Support for excluding files/directories
-- [ ] Add verbose/debug logging options
+```typescript
+export const availableRules: Record<string, Rule> = {
+    noAny: new NoAnyRule(),
+    noEval: new NoEvalRule(),
+    myCustomRule: new MyCustomRule(), // Add your rule
+};
+```
 
-### 10. Integration Examples
-- [ ] Create example projects showing library usage
-- [ ] Add integration guides for popular CI/CD platforms
-- [ ] Provide pre-commit hook examples
+3. Add it to `.analyzerrc`:
 
-## Contributing
+```json
+{
+  "rules": ["noAny", "noEval", "myCustomRule"]
+}
+```
 
-Contributions are welcome! When adding new gates:
+### Adding a New Reporter
 
-1. Create a new file in `src/gates/` following the naming convention `*-gate.ts`
-2. Export a function that accepts `(sourceCode: string, filePath: string): string[]`
-3. Use the TypeScript Compiler API to analyze the code
-4. Return violation messages in the format: `filePath:line:column: message`
-5. Register the gate in `src/runner.ts`
+1. Create a new reporter class in `src/reporters/`:
+
+```typescript
+import { Violation } from "../types/Violation.js";
+import { Reporter } from "./Reporter.js";
+
+export class MyCustomReporter implements Reporter {
+    async report(violations: Violation[]): Promise<void> {
+        // Your reporting logic here
+    }
+}
+```
+
+2. Register it in `src/reporters/Reporter.ts`:
+
+```typescript
+export const availableReporters: Record<string, any> = {
+    json: JsonReporter,
+    console: ConsoleReporter,
+    myCustom: MyCustomReporter, // Add your reporter
+};
+```
+
+3. Add it to `.analyzerrc`:
+
+```json
+{
+  "reporters": ["console", "json", "myCustom"]
+}
+```
+
+## CI/CD Integration
+
+The tool exits with code 1 when violations are detected, making it suitable for CI/CD pipelines:
+
+```yaml
+# Example GitHub Actions workflow
+- name: Run Quality Gates
+  run: npm run gate ./src
+```
 
 ## License
-RBR
+No license yet. All rights reserved. Contact the author for permissions.
