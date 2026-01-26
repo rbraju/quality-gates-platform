@@ -1,8 +1,8 @@
-import { ConsoleReporter } from "./reporters/console-reporter.js";
-import { Reporter } from "./reporters/reporter.js";
+import { availableReporters, Reporter } from "./reporters/Reporter.js";
 import { runGates } from "./core/runner.js";
-import { Violation } from "./core/types.js";
-import { JsonReporter } from "./reporters/json-reporter.js";
+import { Violation } from "./types/Violation.js";
+import fs from "fs";
+import { availableRules, Rule } from "./rules/Rule.js";
 
 const target = process.argv[2];
 
@@ -11,16 +11,31 @@ if (!target) {
     process.exit(1);
 }
 
+// Load config
+const config = JSON.parse(await fs.promises.readFile('.analyzerrc', 'utf-8'));
+const rulesToRun: Rule[] = config.rules.map((name: keyof typeof availableRules) => {
+    const rule = availableRules[name];
+    if (!rule) {
+        throw new Error(`Rule ${name} not found in availableRules.`)
+    }
+    return rule;
+});
+
 // Run quality gates
-const violations: Violation[] = await runGates(target);
+const violations: Violation[] = await runGates(target, rulesToRun);
 
 // Generate reports
-const reporter: Reporter = new ConsoleReporter();
-reporter.report(violations);
+const reporters: Reporter[] = config.reporters.map((name: string) => {
+    const reporterType = availableReporters[name];
+    if (!reporterType) {
+        throw new Error(`Reporter ${name} not found`);
+    }
+    return name == 'json' ? new reporterType(config.outputFile || 'violations.json') : new reporterType();
+});
 
-const jsonReporter: Reporter = new JsonReporter();
-jsonReporter.report(violations);
-
+for (const reporter of reporters) {
+    reporter.report(violations);
+}
 console.log('------------------------------------------------------------------------');
 
 if (violations.length > 0) {

@@ -1,0 +1,5 @@
+{
+  "rules": ["noAny", "noEval"],
+  "reporters": ["console", "json"],
+  "outputFile": "violations.json"
+}
