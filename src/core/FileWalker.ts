@@ -10,7 +10,7 @@ export class FileWalker {
             const fullPath = path.join(dir, entry.name);
             if(entry.isDirectory()) {
                 files.push(...await this.walk(fullPath));
-            } else if (entry.isFile() && fullPath.endsWith('ts')) {
+            } else if (entry.isFile() && fullPath.endsWith('.ts')) {
                 files.push(fullPath);
             }
         }
