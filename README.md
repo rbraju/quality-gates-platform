@@ -309,5 +309,15 @@ The tool exits with code 1 when violations are detected, making it suitable for 
   run: npm run gate ./src
 ```
 
+## Future Development
+
+Planned enhancements for this platform include:
+
+- **Pull-request level checks**: Integrate with GitHub Actions to run quality gates on every pull request, blocking merges when violations are detected.
+- **Versioned rule plugins**: Introduce a plugin system so rules can be versioned, published, and consumed independently, allowing teams to pin and upgrade rule sets safely.
+- **Rule validation test suite**: Add a proper automated test suite to validate rules against sample projects and regression cases.
+- **Packaged CLI distribution**: Package the CLI as a distributable artifact (e.g., npm package) for easy installation and versioning across environments.
+- **Metrics & long-term tracking**: Add metrics and reporting capabilities for tracking quality trends over time (e.g., violation counts per rule, per directory, and per PR).
+
 ## License
 No license yet. All rights reserved. Contact the author for permissions.

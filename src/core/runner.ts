@@ -17,15 +17,22 @@ export async function runGates(targetDir: string, rulesToRun: Rule[]): Promise<V
     const files = await walker.walk(targetDir);
 
     const analyzer = new Analyzer(rulesToRun);
-    const allViolations: Violation[] = [];
+    let allViolations: Violation[] = [];
     
-    // Analyze each file
+    // Analyzing each file in parallel. Each file returns a promise of violations.
+    // Collecting all promises in an array and then flattening it.
+    const tasks: Promise<Violation[]>[] = [];
     for (const file of files) {
-        console.log(`\t- Checking file: ${file}`);
-        const source = await fs.promises.readFile(file, 'utf-8');
-        const violations = analyzer.analyzeFile(source, file);
-        allViolations.push(...violations);
+        const task: Promise<Violation[]> = (async () => {
+            console.log(`\t- Checking file: ${file}`);
+            const source = await fs.promises.readFile(file, 'utf-8');
+            const violations = analyzer.analyzeFile(source, file);
+            return violations;
+        })();
+        tasks.push(task);
     }
 
+    allViolations = (await Promise.all(tasks)).flat();
     return allViolations;
-}
+ }
+ 
