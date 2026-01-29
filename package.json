@@ -15,7 +15,8 @@
 
   "scripts": {
     "build": "tsc",
-    "gate": "tsx src/index.ts"
+    "gate": "tsx src/index.ts",
+    "test": "jest --coverage"
   },
 
   "dependencies": {},
@@ -24,6 +25,9 @@
     "@types/node": "^25.0.10",
     "@typescript-eslint/parser": "^8.53.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "jest": "^30.2.0",
+    "@types/jest": "^30.0.0",
+    "ts-jest": "^29.4.6"
   }
 }

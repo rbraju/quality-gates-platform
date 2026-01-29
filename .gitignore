@@ -1,5 +1,10 @@
 
 node_modules/
+coverage/
 dist/
 
 violations.json
+
+tests/**/*.js
+tests/**/*.d.ts
+tests/**/*.map
