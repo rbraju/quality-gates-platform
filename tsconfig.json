@@ -6,7 +6,7 @@
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "dist",
     "types": ["node", "jest"],
     "isolatedModules": true,
@@ -21,7 +21,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
   },
-  "include": ["src", "tests"],
+  "include": ["src"],
   "ts-node": {
     "esm": true
   }
