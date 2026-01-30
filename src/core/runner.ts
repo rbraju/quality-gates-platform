@@ -4,10 +4,9 @@ import { FileWalker } from "./FileWalker.js";
 import { Analyzer } from "./Analyzer.js";
 import { Rule } from "../rules/Rule.js";
 
-console.log("\n🔥 RUNNER LOADED 🔥");
-
 export async function runGates(targetDir: string, rulesToRun: Rule[]): Promise<Violation[]> {
 
+    console.log("\n🔥 RUNNER LOADED 🔥");
     console.log('------------------------------------------------------------------------');
     console.log("Running quality gates on:", targetDir);
     console.log('------------------------------------------------------------------------');

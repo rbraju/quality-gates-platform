@@ -4,7 +4,6 @@ import { Violation } from "../types/Violation.js";
 export class Analyzer {
     
     constructor(private rules: Rule[]) {
-        console.log("Rules to run: " + rules);
     }
 
     // Analyze all the rules for the given source
